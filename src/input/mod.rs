@@ -3181,14 +3181,17 @@ impl State {
                             (bind_left, bind_right)
                         };
 
-                    if let Some(right) = bind_right {
-                        for _ in 0..ticks {
-                            self.handle_bind(right.clone());
+                    if ticks > 0 {
+                        if let Some(right) = bind_right {
+                            for _ in 0..ticks {
+                                self.handle_bind(right.clone());
+                            }
                         }
-                    }
-                    if let Some(left) = bind_left {
-                        for _ in ticks..0 {
-                            self.handle_bind(left.clone());
+                    } else if ticks < 0 {
+                        if let Some(left) = bind_left {
+                            for _ in 0..(-ticks) {
+                                self.handle_bind(left.clone());
+                            }
                         }
                     }
                 }
@@ -3264,14 +3267,17 @@ impl State {
                         (bind_up, bind_down)
                     };
 
-                    if let Some(down) = bind_down {
-                        for _ in 0..ticks {
-                            self.handle_bind(down.clone());
+                    if ticks > 0 {
+                        if let Some(down) = bind_down {
+                            for _ in 0..ticks {
+                                self.handle_bind(down.clone());
+                            }
                         }
-                    }
-                    if let Some(up) = bind_up {
-                        for _ in ticks..0 {
-                            self.handle_bind(up.clone());
+                    } else if ticks < 0 {
+                        if let Some(up) = bind_up {
+                            for _ in 0..(-ticks) {
+                                self.handle_bind(up.clone());
+                            }
                         }
                     }
                 }
@@ -3408,14 +3414,17 @@ impl State {
                         find_configured_bind(bindings, mod_key, Trigger::TouchpadScrollRight, mods);
                     drop(config);
 
-                    if let Some(right) = bind_right {
-                        for _ in 0..ticks {
-                            self.handle_bind(right.clone());
+                    if ticks > 0 {
+                        if let Some(right) = bind_right {
+                            for _ in 0..ticks {
+                                self.handle_bind(right.clone());
+                            }
                         }
-                    }
-                    if let Some(left) = bind_left {
-                        for _ in ticks..0 {
-                            self.handle_bind(left.clone());
+                    } else if ticks < 0 {
+                        if let Some(left) = bind_left {
+                            for _ in 0..(-ticks) {
+                                self.handle_bind(left.clone());
+                            }
                         }
                     }
                 }
@@ -3438,14 +3447,17 @@ impl State {
                         find_configured_bind(bindings, mod_key, Trigger::TouchpadScrollDown, mods);
                     drop(config);
 
-                    if let Some(down) = bind_down {
-                        for _ in 0..ticks {
-                            self.handle_bind(down.clone());
+                    if ticks > 0 {
+                        if let Some(down) = bind_down {
+                            for _ in 0..ticks {
+                                self.handle_bind(down.clone());
+                            }
                         }
-                    }
-                    if let Some(up) = bind_up {
-                        for _ in ticks..0 {
-                            self.handle_bind(up.clone());
+                    } else if ticks < 0 {
+                        if let Some(up) = bind_up {
+                            for _ in 0..(-ticks) {
+                                self.handle_bind(up.clone());
+                            }
                         }
                     }
                 }
@@ -3455,6 +3467,101 @@ impl State {
                 self.niri.horizontal_finger_scroll_tracker.reset();
                 self.niri.vertical_finger_scroll_tracker.reset();
             }
+        }
+
+        // Handle trackpoint scroll with Super modifier - convert to synthetic keyboard events
+        let mods = self.niri.seat.get_keyboard().unwrap().modifier_state();
+        let modifiers = modifiers_from_state(mods);
+
+        if source == smithay::backend::input::AxisSource::Continuous
+            && modifiers.contains(Modifiers::SUPER)
+        {
+            let horizontal = horizontal_amount.unwrap_or(0.);
+            let vertical = vertical_amount.unwrap_or(0.);
+
+            let v_ticks = self
+                .niri
+                .vertical_finger_scroll_tracker
+                .accumulate(vertical);
+
+            if v_ticks < 0 {
+                // Trackpoint scroll up -> Win+I (focus-workspace-up)
+                for _ in 0..(-v_ticks) {
+                    let bind = Bind {
+                        key: Key {
+                            trigger: Trigger::Keysym(Keysym::new(0x0069)), // 'i'
+                            modifiers: Modifiers::SUPER,
+                        },
+                        action: Action::FocusWorkspaceUp,
+                        repeat: true,
+                        cooldown: Some(Duration::from_millis(50)),
+                        allow_when_locked: false,
+                        allow_inhibiting: false,
+                        hotkey_overlay_title: None,
+                    };
+                    self.handle_bind(bind);
+                }
+            } else if v_ticks > 0 {
+                // Trackpoint scroll down -> Win+U (focus-workspace-down)
+                for _ in 0..v_ticks {
+                    let bind = Bind {
+                        key: Key {
+                            trigger: Trigger::Keysym(Keysym::new(0x0075)), // 'u'
+                            modifiers: Modifiers::SUPER,
+                        },
+                        action: Action::FocusWorkspaceDown,
+                        repeat: true,
+                        cooldown: Some(Duration::from_millis(50)),
+                        allow_when_locked: false,
+                        allow_inhibiting: false,
+                        hotkey_overlay_title: None,
+                    };
+                    self.handle_bind(bind);
+                }
+            }
+
+            // Handle horizontal scroll for column/panel navigation
+            let h_ticks = self
+                .niri
+                .horizontal_finger_scroll_tracker
+                .accumulate(horizontal);
+
+            if h_ticks > 0 {
+                // Trackpoint scroll right -> focus-column-right
+                for _ in 0..h_ticks {
+                    let bind = Bind {
+                        key: Key {
+                            trigger: Trigger::Keysym(Keysym::new(0xff53)), // Right arrow
+                            modifiers: Modifiers::SUPER,
+                        },
+                        action: Action::FocusColumnRight,
+                        repeat: true,
+                        cooldown: Some(Duration::from_millis(50)),
+                        allow_when_locked: false,
+                        allow_inhibiting: false,
+                        hotkey_overlay_title: None,
+                    };
+                    self.handle_bind(bind);
+                }
+            } else if h_ticks < 0 {
+                // Trackpoint scroll left -> focus-column-left
+                for _ in 0..(-h_ticks) {
+                    let bind = Bind {
+                        key: Key {
+                            trigger: Trigger::Keysym(Keysym::new(0xff51)), // Left arrow
+                            modifiers: Modifiers::SUPER,
+                        },
+                        action: Action::FocusColumnLeft,
+                        repeat: true,
+                        cooldown: Some(Duration::from_millis(50)),
+                        allow_when_locked: false,
+                        allow_inhibiting: false,
+                        hotkey_overlay_title: None,
+                    };
+                    self.handle_bind(bind);
+                }
+            }
+            return;
         }
 
         self.update_pointer_contents();
