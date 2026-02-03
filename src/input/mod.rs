@@ -3484,12 +3484,40 @@ impl State {
                 .vertical_finger_scroll_tracker
                 .accumulate(vertical);
 
+            let config = self.niri.config.borrow();
+            let bindings = make_binds_iter(&config, &mut self.niri.window_mru_ui, modifiers);
+            let bind_up = find_configured_bind(
+                bindings.clone(),
+                mod_key,
+                Trigger::TrackpointScrollUp,
+                mods,
+            );
+            let bind_down = find_configured_bind(
+                bindings.clone(),
+                mod_key,
+                Trigger::TrackpointScrollDown,
+                mods,
+            );
+            let bind_left = find_configured_bind(
+                bindings.clone(),
+                mod_key,
+                Trigger::TrackpointScrollLeft,
+                mods,
+            );
+            let bind_right = find_configured_bind(
+                bindings,
+                mod_key,
+                Trigger::TrackpointScrollRight,
+                mods,
+            );
+            drop(config);
+
             if v_ticks < 0 {
                 // Trackpoint scroll up -> Win+I (focus-workspace-up)
                 for _ in 0..(-v_ticks) {
-                    let bind = Bind {
+                    let bind = bind_up.clone().unwrap_or_else(|| Bind {
                         key: Key {
-                            trigger: Trigger::Keysym(Keysym::new(0x0069)), // 'i'
+                            trigger: Trigger::TrackpointScrollUp, // 'i'
                             modifiers: Modifiers::SUPER,
                         },
                         action: Action::FocusWorkspaceUp,
@@ -3498,15 +3526,15 @@ impl State {
                         allow_when_locked: false,
                         allow_inhibiting: false,
                         hotkey_overlay_title: None,
-                    };
+                    });
                     self.handle_bind(bind);
                 }
             } else if v_ticks > 0 {
                 // Trackpoint scroll down -> Win+U (focus-workspace-down)
                 for _ in 0..v_ticks {
-                    let bind = Bind {
+                    let bind = bind_down.clone().unwrap_or_else(|| Bind {
                         key: Key {
-                            trigger: Trigger::Keysym(Keysym::new(0x0075)), // 'u'
+                            trigger: Trigger::TrackpointScrollDown, // 'u'
                             modifiers: Modifiers::SUPER,
                         },
                         action: Action::FocusWorkspaceDown,
@@ -3515,7 +3543,7 @@ impl State {
                         allow_when_locked: false,
                         allow_inhibiting: false,
                         hotkey_overlay_title: None,
-                    };
+                    });
                     self.handle_bind(bind);
                 }
             }
@@ -3529,9 +3557,9 @@ impl State {
             if h_ticks > 0 {
                 // Trackpoint scroll right -> focus-column-right
                 for _ in 0..h_ticks {
-                    let bind = Bind {
+                    let bind = bind_right.clone().unwrap_or_else(|| Bind {
                         key: Key {
-                            trigger: Trigger::Keysym(Keysym::new(0xff53)), // Right arrow
+                            trigger: Trigger::TrackpointScrollRight, // Right arrow
                             modifiers: Modifiers::SUPER,
                         },
                         action: Action::FocusColumnRight,
@@ -3540,15 +3568,15 @@ impl State {
                         allow_when_locked: false,
                         allow_inhibiting: false,
                         hotkey_overlay_title: None,
-                    };
+                    });
                     self.handle_bind(bind);
                 }
             } else if h_ticks < 0 {
                 // Trackpoint scroll left -> focus-column-left
                 for _ in 0..(-h_ticks) {
-                    let bind = Bind {
+                    let bind = bind_left.clone().unwrap_or_else(|| Bind {
                         key: Key {
-                            trigger: Trigger::Keysym(Keysym::new(0xff51)), // Left arrow
+                            trigger: Trigger::TrackpointScrollLeft, // Left arrow
                             modifiers: Modifiers::SUPER,
                         },
                         action: Action::FocusColumnLeft,
@@ -3557,7 +3585,7 @@ impl State {
                         allow_when_locked: false,
                         allow_inhibiting: false,
                         hotkey_overlay_title: None,
-                    };
+                    });
                     self.handle_bind(bind);
                 }
             }

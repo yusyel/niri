@@ -509,10 +509,10 @@ binds {
     // Trackpoint scroll binds work similarly to touchpad binds. You can use them
     // to switch workspaces or navigate columns.
     // Uncomment these binds to enable trackpoint scroll for workspace switching:
-    // Mod+TrackpointScrollDown { focus-workspace-down; }
-    // Mod+TrackpointScrollUp   { focus-workspace-up; }
-    // Mod+TrackpointScrollRight { focus-column-right; }
-    // Mod+TrackpointScrollLeft  { focus-column-left; }
+    // Mod+TrackpointScrollDown cooldown-ms=150 { focus-workspace-down; }
+    // Mod+TrackpointScrollUp   cooldown-ms=150 { focus-workspace-up; }
+    // Mod+TrackpointScrollRight cooldown-ms=150 { focus-column-right; }
+    // Mod+TrackpointScrollLeft  cooldown-ms=150 { focus-column-left; }
 
     // You can refer to workspaces by index. However, keep in mind that
     // niri is a dynamic workspace system, so these commands are kind of
