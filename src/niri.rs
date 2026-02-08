@@ -264,6 +264,7 @@ pub struct Niri {
     pub devices: HashSet<input::Device>,
     pub tablets: HashMap<input::Device, TabletData>,
     pub touch: HashSet<input::Device>,
+    pub trackpoints: HashSet<input::Device>,
 
     // Smithay state.
     pub compositor_state: CompositorState,
@@ -2456,6 +2457,7 @@ impl Niri {
             devices: HashSet::new(),
             tablets: HashMap::new(),
             touch: HashSet::new(),
+            trackpoints: HashSet::new(),
 
             compositor_state,
             xdg_shell_state,
